@@ -1,5 +1,5 @@
 // API 响应基础类型
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean
   data?: T
   message?: string
@@ -16,7 +16,7 @@ export interface User {
 }
 
 // 登录请求参数
-export interface LoginRequest {
+export interface LoginRequest extends Record<string, unknown> {
   username: string
   password: string
 }
@@ -29,7 +29,7 @@ export interface LoginResponse {
 }
 
 // 刷新令牌请求参数
-export interface RefreshTokenRequest {
+export interface RefreshTokenRequest extends Record<string, unknown> {
   refreshToken: string
 }
 
@@ -37,5 +37,5 @@ export interface RefreshTokenRequest {
 export interface ApiError {
   message: string
   code: number
-  details?: any
+  details?: Record<string, unknown>
 }

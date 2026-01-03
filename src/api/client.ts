@@ -12,7 +12,7 @@ const API_CONFIG = {
 // API 错误处理
 export class ApiErrorHandler extends Error {
   code: number
-  details?: any
+  details?: Record<string, unknown>
 
   constructor(error: ApiError) {
     super(error.message)
@@ -28,7 +28,7 @@ type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
 interface RequestOptions {
   method?: HttpMethod
   headers?: Record<string, string>
-  body?: any
+  body?: Record<string, unknown> | string | FormData
   params?: Record<string, string>
 }
 
@@ -73,23 +73,27 @@ class ApiClient {
     const requestHeaders = { ...this.defaultHeaders, ...headers }
 
     try {
+      const requestBody = body ?
+        (body instanceof FormData || typeof body === 'string' ? body : JSON.stringify(body))
+        : undefined
+
       const response = await fetch(url, {
         method,
         headers: requestHeaders,
-        body: body ? JSON.stringify(body) : undefined,
+        body: requestBody,
       })
 
-      const data = await response.json()
+      const data = await response.json() as Record<string, unknown>
 
       if (!response.ok) {
         throw new ApiErrorHandler({
-          message: data.message || `HTTP ${response.status}: ${response.statusText}`,
+          message: (data.message as string) || `HTTP ${response.status}: ${response.statusText}`,
           code: response.status,
           details: data,
         })
       }
 
-      return data
+      return data as unknown as ApiResponse<T>
     } catch (error) {
       if (error instanceof ApiErrorHandler) {
         throw error
@@ -99,7 +103,7 @@ class ApiClient {
       throw new ApiErrorHandler({
         message: error instanceof Error ? error.message : '网络请求失败',
         code: 0,
-        details: error,
+        details: error as Record<string, unknown>,
       })
     }
   }
@@ -110,12 +114,12 @@ class ApiClient {
   }
 
   // POST 请求
-  async post<T>(endpoint: string, body?: any): Promise<ApiResponse<T>> {
+  async post<T>(endpoint: string, body?: Record<string, unknown> | string | FormData): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { method: 'POST', body })
   }
 
   // PUT 请求
-  async put<T>(endpoint: string, body?: any): Promise<ApiResponse<T>> {
+  async put<T>(endpoint: string, body?: Record<string, unknown> | string | FormData): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { method: 'PUT', body })
   }
 
@@ -125,7 +129,7 @@ class ApiClient {
   }
 
   // PATCH 请求
-  async patch<T>(endpoint: string, body?: any): Promise<ApiResponse<T>> {
+  async patch<T>(endpoint: string, body?: Record<string, unknown> | string | FormData): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { method: 'PATCH', body })
   }
 }
